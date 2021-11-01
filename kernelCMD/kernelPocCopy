@@ -1,0 +1,13 @@
+#! /bin/bash
+
+if [ $# != 1 ] ; then
+echo "Usage:kernelPocCopy pocFile"
+echo "Example:kernelPocCopy poc"
+exit 1;
+fi
+
+pocFile=$1
+
+cp ${pocFile} ~/kernelAll/rootfs/tmp/
+cd ~/kernelAll/rootfs
+gen_rootfs rootfs

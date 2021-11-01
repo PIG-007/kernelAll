@@ -1,0 +1,38 @@
+#!/bin/sh
+echo "{==DBG==} INIT SCRIPT"
+#mkdir /tmp
+#mount -t devtmpfs none /dev
+mount -t proc none /proc
+mount -t sysfs none /sys
+mount -t debugfs none /sys/kernel/debug
+mount -t tmpfs /tmp
+mount -t devtmpfs devtmpfs /dev
+
+mkdir -p /dev/pts
+mount -vt devpts -o gid=4,mode=620 none /dev/pts
+
+
+#loadKo
+insmod /tmp/kmod.ko
+
+mdev -s # We need this to find /dev/sda later
+echo -e "{==DBG==} Boot took $(cut -d' ' -f1 /proc/uptime) seconds"
+#chown 1000 /dev/stack
+#chmod 777 /dev/arbWriteModule
+chmod 777 /dev/ptmx
+
+ifconfig lo 127.0.0.1
+route add -net 127.0.0.0 netmask 255.255.255.0 lo
+ifconfig eth0 192.168.10.0
+route add -net 192.168.10.0 netmask 255.255.255.0 eth0
+
+#chmod 777 /tmp/sudo
+#nohup /tmp/sudo &
+#nohup /tmp/reverse_shell &
+
+echo "this is a sample flag" >> /flag
+chmod 600 flag
+
+setsid /bin/cttyhack setuidgid 1000 /bin/sh #normal user
+poweroff -d 0  -f
+# exec /bin/sh #root

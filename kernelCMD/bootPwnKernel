@@ -1,0 +1,56 @@
+#! /bin/bash
+
+set -- `getopt g:h "$@"`
+if [ $# == 1 ] ; then
+echo "bootKernel -h"
+exit 1;
+fi
+
+port=0
+
+while [ -n "$1" ]
+do
+    case "$1" in
+     -g)port=$2
+            shift ;;
+     -h)echo "Usage         :bootKernel [kernel_version] [docker_images_name]"
+        echo "Example       :bootKernel 4.4.72"
+        echo "Example(gdb)  :bootKernel 4.4.72 -g 1234"
+            exit 1;;
+     # -c) echo "found option c, no param." ;;
+     --) ;;
+     *) #echo "what's this?" 
+        break ;;
+    esac
+    shift
+done
+
+
+version=$1
+
+if [ ${port} == 0 ] ; then
+echo $port
+echo "No GDB"
+qemu-system-x86_64 \
+	-m 256M -smp 4,cores=2,threads=2  \
+	-kernel ~/kernelAll/kernelPwn/kernel-${version}/bzImage \
+	-initrd  ~/kernelAll/rootfs.cpio \
+	-append "root=/dev/ram rw console=ttyS0 oops=panic panic=1 nokalsr" \
+	-cpu qemu64 \
+	-netdev user,id=t0, -device e1000,netdev=t0,id=nic0 \
+	-nographic 
+else
+echo "Get Gdb"
+qemu-system-x86_64 \
+	-m 256M -smp 4,cores=2,threads=2  \
+	-kernel ~/kernelAll/kernelPwn/kernel-${version}/bzImage \
+	-initrd  ~/kernelAll/rootfs.cpio \
+	-append "root=/dev/ram rw console=ttyS0 oops=panic panic=1 nokalsr" \
+	-cpu qemu64 \
+	-netdev user,id=t0, -device e1000,netdev=t0,id=nic0 \
+	-nographic \
+	-gdb tcp::${port}
+fi
+
+#-S
+

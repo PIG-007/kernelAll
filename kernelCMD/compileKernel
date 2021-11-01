@@ -1,0 +1,61 @@
+#! /bin/bash
+
+debugFlag=0
+set -- `getopt g:h "$@"`
+if [ $# == 1 ] ; then
+echo "compileKernel -h"
+exit 1;
+fi
+
+while [ -n "$1" ]
+do
+    case "$1" in
+     -g)debugFlag=1
+            shift ;;
+     -h)echo "Usage             :compileKernel [kernel-version]"
+        echo "Example           :compileKernel 5.11.1"
+        echo "Example(debug)    :compileKernel 5.11.1 -g debug"
+            exit 1;;
+     # -c) echo "found option c, no param." ;;
+     --) ;;
+     *) #echo "what's this?" 
+        break ;;
+    esac
+    shift
+done
+
+# if [ $debugFlag == 1 ] ; then
+# echo "You get it"
+# fi
+
+version=$1
+first=${version:0:1}
+
+wget -P ~/kernelAll/kernelSource/ https://mirror.tuna.tsinghua.edu.cn/kernel/v$first.x/linux-$version.tar.gz 
+tar -zvxf ~/kernelAll/kernelSource/linux-$version.tar.gz -C ~/kernelAll/kernelSource/
+rm ~/kernelAll/kernelSource/linux-$version.tar.gz
+cd ~/kernelAll/kernelSource/linux-$version
+sudo make defconfig
+sed -i '/CONFIG_GENERIC_IRQ_PROBE=y/d' .config
+sed -i '/CONFIG_SYSTEM_TRUSTED_KEYS=""/d' .config
+
+if [ $debugFlag == 1 ] ; then
+sed -i 'CONFIG_DEBUG_INFO=y' .config
+fi
+
+
+sudo apt-get install make gcc bison flex libssl-dev musl-tools
+sudo apt-get install libncurses5-dev openssl 
+sudo apt-get install build-essential 
+sudo apt-get install pkg-config
+sudo apt-get install libc6-dev
+sudo apt-get install libelf-dev
+sudo apt-get install zlibc minizip 
+sudo apt-get install libidn11-dev libidn11
+
+sudo make -j4
+
+cd ~/kernelAll
+mkdir -p ~/kernelAll/kernelPwn/kernel-$version
+cp ~/kernelAll/kernelSource/linux-$version/arch/x86/boot/bzImage ~/kernelAll/kernelPwn/kernel-$version/
+cp ~/kernelAll/kernelSource/linux-$version/vmlinux ~/kernelAll/kernelPwn/kernel-$version/
