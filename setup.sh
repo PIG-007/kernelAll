@@ -1,19 +1,22 @@
 #! /bin/bash
 
 
-sudo apt-get install make gcc bison flex libssl-dev musl-tools
-sudo apt-get install libncurses5-dev openssl 
-sudo apt-get install build-essential 
-sudo apt-get install pkg-config
-sudo apt-get install libc6-dev
-sudo apt-get install libelf-dev
-sudo apt-get install zlibc minizip 
-sudo apt-get install libidn11-dev libidn11
-sudo apt-get install bc
-sudo apt-get install cpio
+sudo apt-get -y install make gcc bison flex libssl-dev musl-tools
+sudo apt-get -y install libncurses5-dev openssl 
+sudo apt-get -y install build-essential 
+sudo apt-get -y install pkg-config
+sudo apt-get -y install libc6-dev
+sudo apt-get -y install libelf-dev
+sudo apt-get -y install zlibc minizip 
+sudo apt-get -y install libidn11-dev libidn11
+sudo apt-get -y install bc
+sudo apt-get -y install cpio
+sudo apt-get -y install tar wget
+sudo apt-get -y install qemu
 
 
-cd ~/kernelAll
-dec_rootfs rootfs.cpio
+
 chmod a+x ~/kernelAll/kernelCMD/*
 sudo cp ~/kernelAll/kernelCMD/* /usr/bin/
+cd ~/kernelAll
+dec_rootfs rootfs.cpio

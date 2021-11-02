@@ -28,19 +28,9 @@ done
 # echo "You get it"
 # fi
 
-
 version=$1
 first=${version:0:1}
 
-sudo apt-get install make gcc bison flex libssl-dev musl-tools
-sudo apt-get install libncurses5-dev openssl 
-sudo apt-get install build-essential 
-sudo apt-get install pkg-config
-sudo apt-get install libc6-dev
-sudo apt-get install libelf-dev
-sudo apt-get install zlibc minizip 
-sudo apt-get install libidn11-dev libidn11
-sudo apt-get install bc
 
 wget -P ~/kernelAll/kernelSource/ https://mirror.tuna.tsinghua.edu.cn/kernel/v$first.x/linux-$version.tar.gz 
 tar -zvxf ~/kernelAll/kernelSource/linux-$version.tar.gz -C ~/kernelAll/kernelSource/
