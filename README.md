@@ -89,5 +89,11 @@ bootPwnKernel 4.4.72 -g 1234
 
 # 注
 
+ubuntu20.04的时候，依照setup.sh中安装qemu已经不太行了，需要自己手动安装对应版本的包，这里就需要安装如下的包，之后运行`bootPwnKernel`相关命令即可启动：
+
+```bash
+apt-get install qemu-system-x86
+```
+
 本人水平比较菜，如有错误或者bug，请师傅们多担待，欢迎提出相关意见。
 

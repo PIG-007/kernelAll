@@ -91,5 +91,11 @@ Find the following location, modify the required options accordingly, and then e
 
 # Post
 
+In ubuntu20.04, the installation of qemu in setup.sh is no longer good, you need to manually install the corresponding version of the package, here you need to install the following package, and then run the `bootPwnKernel` related command to start: 
+
+```bash
+apt-get install qemu-system-x86
+```
+
 My skill level is very low.So if there are errors or bugs, please bear with me and welcome your comments. 
 
