@@ -1,0 +1,9 @@
+#! /bin/sh
+
+if [ $# != 1 ] ; then
+echo "gen_rootfs [file]"
+exit 1;
+fi
+
+
+find ./* | cpio -H newc -o > ../$1.cpio
