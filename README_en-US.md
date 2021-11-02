@@ -1,158 +1,95 @@
-# pwnDockerAll
+# kernelAll
 
-Language: [English](https://github.com/PIG-007/pwnDockerAll/blob/master/README_en-US.md) | [中文简体](https://github.com/PIG-007/pwnDockerAll/blob/master/README.md)
+Language: [English](https://github.com/PIG-007/kernelAll/blob/master/README_en-US.md) | [中文简体](https://github.com/PIG-007/kernelAll/blob/master/README.md)
 
-Construct all pwn enviroment for just a few commands,only need docker!
+Compile many 
 
-## All docker include
+You can compile the kernels of various versions with only a few commands, and qemu can run it.
 
-+ `pwndbg`:[pwndbg/pwndbg: Exploit Development and Reverse Engineering with GDB Made Easy (github.com)](https://github.com/pwndbg/pwndbg)
-+ `Pwngdb`:[scwuaptx/Pwngdb: gdb for pwn (github.com)](https://github.com/scwuaptx/Pwngdb)
-+ `peda`:[longld/peda: PEDA - Python Exploit Development Assistance for GDB (github.com)](https://github.com/longld/peda)
-+ `pwntools`:[Gallopsled/pwntools: CTF framework and exploit development library (github.com)](https://github.com/Gallopsled/pwntools)
-+ `other essential`:ROPgadget..and so on
-
-## Installation
-
-Before that,you have to download `docker.io`!And make sure your container could connect to network!
+## Install
 
 ```bash
 cd ~/
-git clone https://github.com/PIG-007/pwnDockerAll.git 
-#git clone https://gitee.com/Piggy007/pwnDockerAll.git
-cd pwnDockerAll
+git clone https://github.com/PIG-007/kernelAll.git
+#git clone https://gitee.com/Piggy007/kernelAll.git
+cd kernelAll
 chmod a+x setup.sh
-sudo ./setup.sh [libc_version]
-#such as this:
-#sudo ./setup.sh 2.33
+sudo ./setup.sh
 ```
 
-## Usages
+## Usage
 
-Change path to the pwn topic
+### 1.Compile each version of the kernel 
 
 ```bash
-dockerPwnRun [pwnfileDir] [docker_images_name]
-dockerPwnRun [pwnfileDir] [docker_images_name] -g [port]
+compileKernel 4.4.72
 ```
 
-And the pwnfileDir is on /ctf/
+This means that the version of the compiled kernel is 4.4.72. 
 
-![](https://pig-007.oss-cn-beijing.aliyuncs.com/img/20210827215910.png)
+After completion, you can find the kernel source code of the corresponding version under `~/kernelAll/kernelSource`, this is used to compile the module, or you can use the `dir` function of `gdb` to directly debug the source code when debugging.
 
-The pwnfileDir is mapped to the docker from host machine.So,you could change it just under the host machine.
+![image-20211102101950797](https://pig-007.oss-cn-beijing.aliyuncs.com/img/20211102101957.png)
 
-Besides,when you exit from the docker,the container will be removed,it won't occupy the space.
+### 2.Compile the driver module 
 
-You could check the images:
+Put the source code of the driver module into the `~/kernelAll/modFile/`, then 
+
+```
+compileModule kmod.c 4.4.72
+```
+
+This means using the compiled kernel source code of version 4.4.72 to compile `kmod.c`. After the compilation, kmod.ko is automatically placed in the rootfs file system and repackaged. 
+
+### 3.Add files to the file system 
 
 ```bash
-docker images
+kernelPocCopy poc
 ```
 
-## Other function
+This means that the `poc` file is put into the rootfs file system, and then repackaged. 
 
-### For gadget
-
-Copy the ld.so and libc.so to `dockerLibc` after finishing the docker image.
-
-### Get other version libc
-
-In theory,if you could provide the corresponding version sources.list and the docker hub has corresponding version ubuntu.Any glibc version could be created!But before that,you should change some configuration:
+### 4.Start QEMU 
 
 ```bash
-#the configuration is in setup.sh
-
-dic=([2.23]="16.04"  [2.24]="17.04" [2.26]="17.10"
-    [2.27]="18.04"  [2.28]="18.10" [2.29]="19.04"
-    [2.30]="19.10"  [2.31]="20.04" [2.32]="20.10"
-    [2.33]="21.04" [2.34]="22.04")
+bootPwnKernel 4.4.72
 ```
 
-Add some corresponding version,such as follow:
+This means that with the current file system, using `qemu-system-x86_64` to start the just-compiled 4.4.72 kernel. 
+
+### 5.GDB additional debugging 
+
+Since additional debugging is definitely needed when doing pwn questions, debugging functions are also provided.
 
 ```bash
-#the configuration is in setup.sh
-
-dic=([2.19]="14.04" [2.23]="16.04"  [2.24]="17.04" [2.26]="17.10"
-    [2.27]="18.04"  [2.28]="18.10" [2.29]="19.04"
-    [2.30]="19.10"  [2.31]="20.04" [2.32]="20.10"
-    [2.33]="21.04" [2.34]="22.04")
+bootPwnKernel 4.4.72 -g 1234
 ```
 
-Add the `[2.19]="14.04"` just for that!
+That is, port 1234 is used as a debugging port for additional debugging by gdb.
 
-### New terminal GDB attach
 
-Add the following statements could realize `gdb.attach(p)` function!
 
-```bash
-dockerPwnRun [pwnfileDir] [docker_images_name] -g 30001
-```
+## Expand
 
-The port could be set up as for yourself!
+It is often necessary to modify the `init` and `qemu startup options` when doing pwn questions, so related update functions are also provided here
 
-```python
-#In exp.py
+### 1.Update init 
 
-def dockerDbg():
-	myGdb = remote("127.0.0.1",30001)
-	myGdb.close()
-	pause()
-```
+This can be directly updated in the `init` file in `~/kernelAll/`, and then enter the `updateKernelAll` command.
 
-This function is base on docker host network.
+![image-20211102104712173](https://pig-007.oss-cn-beijing.aliyuncs.com/img/20211102104712.png)
 
-### The other terminal
+### 2.Update qemu startup items
 
-The default terminal is  gnome-terminal.But you could reset it by your own terminal.The configuration of terminal is in the file `terminalConfig`.You could change it to other terminal.
+This needs to be updated in the `~/kernelAll/kernelCMD/bootPwnKernel` file 
 
-And the supported terminal are:
+Find the following location, modify the required options accordingly, and then enter the `updateKernelAll` command to update. 
 
-+ `gnome-terminal`
-+ `xterm`
-+ `xfce4-terminal`
+![image-20211102110003180](https://pig-007.oss-cn-beijing.aliyuncs.com/img/20211102110003.png)
 
-You could also add some other terminal.And chang the terminalConfig.Such as the `terminator`:
 
-```bash
-terminalList=(gnome-terminal xterm xfce4-terminal terminator)
 
-if [ "${terminal}" == "terminator" ];then
-	#echo "gnome-terminal"
-	sudo terminator -x bash -c "~/pwnDockerAll/dockerGDBOut;exec bash" bash"
-	exit 1;
-fi
-```
+# Post
 
-### Debug progress with glibc-sources
-
-You could uncomment the follow statement in the file `setup.sh` before creating docker image.
-
-```bash
-##gdb sources----------------------------------------
-
-wget -P ./glibcFile/$version_images/ http://ftp.gnu.org/gnu/glibc/glibc-$version_images.tar.gz
-tar -zxvf ./glibcFile/$version_images/glibc-$version_images.tar.gz -C ./glibcFile/$version_images/
-docker cp ./glibcFile/$version_images/glibc-$version_images/ $conName:/root/glibc-src/
-```
-
-```bash
-##add your own thing here----------------------------
-
-docker exec $conName /bin/bash -c "sed -i 'N;6 i dir ~/glibc-src/malloc' ~/.gdbinit"
-```
-
-### Add your own thing
-
-Under the statment,you could add your own thing to the image!In file `setup.sh`
-
-```bash
-##add your own thing here----------------------------
-docker cp file $version_images:/root/
-```
-
-### Install other software
-
-You could install other software to the image!In the end of the file `install.sh`
+My skill level is very low.So if there are errors or bugs, please bear with me and welcome your comments. 
 

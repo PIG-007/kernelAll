@@ -85,3 +85,9 @@ bootPwnKernel 4.4.72 -g 1234
 
 ![image-20211102110003180](https://pig-007.oss-cn-beijing.aliyuncs.com/img/20211102110003.png)
 
+
+
+# 注
+
+本人水平比较菜，如有错误或者bug，请师傅们多担待，欢迎提出相关意见。
+
