@@ -1,0 +1,32 @@
+#! /bin/bash
+
+if [ $# != 2 ] ; then
+echo "Usage:genKernelROP [vmlinuxFile] [expFile]"
+echo "Example:genKernelROP ./vmlinux exp.c"
+exit 1;
+fi
+
+
+ROPgadget --binary "$1" > gadget
+grep -e " : pop rdi ; ret$" gadget
+echo -e '\033[1;31;40m------------------------------------------------\033[0m'
+grep -e " : pop rsi ; ret$" gadget
+echo -e '\033[1;31;40m------------------------------------------------\033[0m'
+grep -e " : pop rdx ; ret$" gadget
+echo -e '\033[1;31;40m------------------------------------------------\033[0m'
+grep -e " : pop rax ; ret$" gadget
+echo -e '\033[1;31;40m------------------------------------------------\033[0m'
+grep -e " : pop rbp ; ret$" gadget
+echo -e '\033[1;31;40m------------------------------------------------\033[0m'
+grep -e " : xchg eax, esp ; ret$" gadget
+echo -e '\033[1;31;40m------------------------------------------------\033[0m'
+grep -e " : mov cr4, rax ; pop rbp ; ret$" gadget
+echo -e '\033[1;31;40m------------------------------------------------\033[0m'
+grep -e " : mov cr4, rdi ; pop rbp ; ret$" gadget
+echo -e '\033[1;31;40m------------------------------------------------\033[0m'
+grep -e " : mov rsp, rax ; dec ebx ;" gadget
+echo -e '\033[1;31;40m------------------------------------------------\033[0m'
+grep -e " : swapgs ; ret$" gadget
+echo -e '\033[1;31;40m------------------------------------------------\033[0m'
+objdump -d "$1" -M intel | grep -e 'iretq'
+echo -e '\033[1;31;40m------------------------------------------------\033[0m'
