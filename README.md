@@ -19,8 +19,10 @@ sudo ./setup.sh
 
 ### 1.编译各版本内核
 
+#### 正常编译
+
 ```bash
-compileKernel 4.4.72
+compileKernel -v 4.4.72
 ```
 
 这里就代表编译内核为4.4.72版本的。
@@ -28,6 +30,24 @@ compileKernel 4.4.72
 完成之后在~/kernelAll/kernelSource下可以找到对应版本的内核源码，这个用来编译模块，或者在调试的时候可以用gdb的dir功能来直接调试源码
 
 ![image-20211102101950797](https://pig-007.oss-cn-beijing.aliyuncs.com/img/20211102101957.png)
+
+#### 配置内核
+
+由于更新成了py文件，使用python3，pip安装一下对应包即可
+
+当然还可以对内核添加配置
+
+##### ![image-20220316212716609](https://pig-007.oss-cn-beijing.aliyuncs.com/img/202203162127735.png)
+
+##### debug的内核
+
+更加方便调试，编译内核时加入`-debug`
+
+##### 设置内核
+
+添加一些配置，比如`CONFIG_SLAB_FREELIST_RANDOM=y`，`CONFIG_SLAB_FREELIST_HARDENED=n`
+
+使用`-c CONFIG_SLAB_FREELIST_RANDOM=y CONFIG_SLAB_FREELIST_HARDENED=n `即可
 
 ### 2.编译驱动模块
 
@@ -85,6 +105,42 @@ bootPwnKernel 4.4.72 -g 1234
 
 ![image-20211102110003180](https://pig-007.oss-cn-beijing.aliyuncs.com/img/20211102110003.png)
 
+## 调试工具
+
+详见`~/kernelAll/kernelTool/pigKernelHeap.py`，在gdb中直接`source`引用即可。
+
+配置了两个命令`pigSlub`和`pigSlab`，分别对应在Slub以及Slab分配配置下获取相关的freelist以及CPU等情况，不过需要在编译时加入`debug`选项，用来获取加入`debug`的全局变量。
+
+### 获取帮助
+
+```bash
+pigSlub help
+```
+
+![image-20220316214109920](https://pig-007.oss-cn-beijing.aliyuncs.com/img/202203162141025.png)
+
+### 初始化
+
+即传递一下相关配置，由于在kernel的Slub堆中，有harden、random等保护，但是不同版本中有swab计算，或者FD位置为chunk_addr+size/2，所以需要传递一下相关配置进行计算。比如这里就开启了harden保护，且版本在v5.9，存在FD偏移和swab计算的情况。
+
+```
+pigSlub init freelist_harden freelist_harden_swab freelist_size2
+```
+
+### 获取freelist
+
+```bash
+pigSlub cpu0
+pigSlub kmalloc-32
+pigSlub all
+```
+
+具体自己实验一下吧
+
+![image-20220316213858428](https://pig-007.oss-cn-beijing.aliyuncs.com/img/202203162138641.png)
+
+相对于的pigSlab也是一样的。
+
 
 
 # 注
@@ -96,4 +152,3 @@ apt-get install qemu-system-x86
 ```
 
 本人水平比较菜，如有错误或者bug，请师傅们多担待，欢迎提出相关意见。
-
