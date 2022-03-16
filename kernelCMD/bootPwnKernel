@@ -34,18 +34,18 @@ echo "No GDB"
 qemu-system-x86_64 \
 	-m 256M -smp 4,cores=2,threads=2  \
 	-kernel ~/kernelAll/kernelPwn/kernel-${version}/bzImage \
-	-initrd  ~/kernelAll/rootfs.cpio \
-	-append "root=/dev/ram rw console=ttyS0 oops=panic panic=1 nokalsr" \
+	-initrd  ~/kernelAll/kernelPwn/kernel-${version}/rootfs.cpio \
+	-append "root=/dev/ram rw console=ttyS0 oops=panic panic=1 nokaslr" \
 	-cpu qemu64 \
 	-netdev user,id=t0, -device e1000,netdev=t0,id=nic0 \
-	-nographic 
+	-nographic
 else
 echo "Get Gdb"
 qemu-system-x86_64 \
 	-m 256M -smp 4,cores=2,threads=2  \
 	-kernel ~/kernelAll/kernelPwn/kernel-${version}/bzImage \
-	-initrd  ~/kernelAll/rootfs.cpio \
-	-append "root=/dev/ram rw console=ttyS0 oops=panic panic=1 nokalsr" \
+	-initrd  ~/kernelAll/kernelPwn/kernel-${version}/rootfs.cpio \
+	-append "root=/dev/ram rw console=ttyS0 oops=panic panic=1 nokaslr" \
 	-cpu qemu64 \
 	-netdev user,id=t0, -device e1000,netdev=t0,id=nic0 \
 	-nographic \

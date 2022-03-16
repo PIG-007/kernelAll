@@ -29,3 +29,4 @@ sed -i "/#loadKo/ainsmod /tmp/${file}" init
 cp init ~/kernelAll/rootfs/
 cd ~/kernelAll/rootfs
 gen_rootfs rootfs
+cp ~/kernelAll/rootfs.cpio ~/kernelAll/kernelPwn/kernel-${version}/

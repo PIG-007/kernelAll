@@ -1,13 +1,15 @@
 #! /bin/bash
 
-if [ $# != 1 ] ; then
-echo "Usage:kernelPocCopy pocFile"
-echo "Example:kernelPocCopy poc"
+if [ $# != 2 ] ; then
+echo "Usage:kernelPocCopy pocFile [kernel-version]"
+echo "Example:kernelPocCopy poc 4.4.72"
 exit 1;
 fi
 
 pocFile=$1
+version=$2
 
 cp ${pocFile} ~/kernelAll/rootfs/tmp/
 cd ~/kernelAll/rootfs
 gen_rootfs rootfs
+cp ~/kernelAll/rootfs.cpio ~/kernelAll/kernelPwn/kernel-${version}/

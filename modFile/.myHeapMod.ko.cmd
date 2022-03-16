@@ -1,0 +1,1 @@
+cmd_/home/hacker/kernelAll/modFile/myHeapMod.ko := ld -r -m elf_x86_64  --build-id=sha1  -T scripts/module.lds -o /home/hacker/kernelAll/modFile/myHeapMod.ko /home/hacker/kernelAll/modFile/myHeapMod.o /home/hacker/kernelAll/modFile/myHeapMod.mod.o;  true
