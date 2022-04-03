@@ -1,9 +1,9 @@
 # -*- coding:UTF-8 -*-
-
 import gdb, json, datetime
 from string import punctuation
 import re
 import struct
+
 
 def swab64(number):
 	return int.from_bytes(number.to_bytes(int(len(hex(number)[2:])/2),byteorder='big'),byteorder='little')
@@ -14,16 +14,16 @@ def readMemory(addr, length=0x10):
 
 
 def btoi(nbyte) -> int:
-	"""Unpack one qword respecting the current architecture endianness."""
 	return int.from_bytes(nbyte,byteorder='little')
+
+
 
 
 class pigSlub(gdb.Command):
 	def __init__ (self):
 		super(pigSlub, self).__init__ ("pigSlub", gdb.COMMAND_USER)
-		self._demation = 1
+		self._demation = 0
 		self._cpu_amount = 0
-		self.ex_finalAddr = re.compile(r'0x[0-9,a-z]*')
 		self.__per_cpu_offset = None
 		self._kmalloc_caches = None
 		self._kmalloc_xxx_dict = {"kmalloc-96":1,"kmalloc-192":2,"kmalloc-8":3,"kmalloc-16":4,
@@ -38,28 +38,29 @@ class pigSlub(gdb.Command):
 		self._freelist_harden = False
 		self._freelist_harden_swab = False
 		self._freelist_random = False
-		self._slab_random_offset = 0
 		self._freelist_size2 = False
 
 	def initSlub(self,config):
-		self.__per_cpu_offset = int(self.ex_finalAddr.findall(gdb.execute ('p &__per_cpu_offset',to_string=True))[0],16)
-		print("__per_cpu_offset:"+hex(self.__per_cpu_offset))
-		self._kmalloc_caches = int(self.ex_finalAddr.findall(gdb.execute ('p &kmalloc_caches',to_string=True))[0],16)
-		print("kmalloc_caches:"+hex(self._kmalloc_caches))
-		while(readMemory(self.__per_cpu_offset+self._cpu_amount*8,0x8) != readMemory(self.__per_cpu_offset+(self._cpu_amount+1)*8,0x8)):
+		self.__per_cpu_offset = gdb.parse_and_eval('__per_cpu_offset')
+		self._kmalloc_caches = gdb.parse_and_eval('kmalloc_caches')
+		while(self.__per_cpu_offset[self._cpu_amount] != self.__per_cpu_offset[self._cpu_amount+1]):
 			self._cpu_amount = self._cpu_amount + 1
-		print("_cpu_amount:"+hex(self._cpu_amount))
-		for i in range(len(config)):
-			print(config[i])
-			if( config[i] == "freelist_harden"):
+		if(gdb.parse_and_eval('kmem_cache').type == gdb.parse_and_eval('kmalloc_caches[1]').type):
+			self._demation = 1
+		else:
+			self._demation = 2
+		if(self._demation == 2):
+			self._kmalloc_caches = gdb.parse_and_eval('kmalloc_caches[0]')
+		for i in config:
+			print(i)
+			if( i == "freelist_harden"):
 				self._freelist_harden = True
-				self._slab_random_offset = int(config[i+1],16)
-			if( config[i] == "freelist_harden_swab"):
+			if( i == "freelist_harden_swab"):
 				self._freelist_harden_swab = True
-			if( config[i] == "freelist_random"):
+			if( i == "freelist_random"):
 				print("get random")
 				self._freelist_random = True
-			if( config[i] == "freelist_size2"):
+			if( i == "freelist_size2"):
 				print("get size2")
 				self._freelist_size2 = True
 
@@ -72,21 +73,14 @@ class pigSlub(gdb.Command):
 
 
 	def printCpuFreelist(self,kmalloc_xxx,cpu_num):
-		print("printCpuFreelist------FUNC")
-		#freelist_addr = int(self._kmalloc_caches[self._kmalloc_xxx_dict[kmalloc_xxx]]["cpu_slab"]) + int(self.__per_cpu_offset[cpu_num])
-		freelist_addr = btoi(readMemory(btoi(readMemory(self._kmalloc_caches+self._kmalloc_xxx_dict[kmalloc_xxx]*8,8)),8)) \
-			+ btoi(readMemory(self.__per_cpu_offset+cpu_num*8,8))
-		#freelist_addr = btoi(readMemory(self._kmalloc_caches+self._kmalloc_xxx_dict[kmalloc_xxx]*8,8))
-		#freelist_addr = 
-		print("freelist_addr:"+hex(freelist_addr))
-		#print("GET1")
-		head_chunk = btoi(readMemory(freelist_addr,8))
+		#print("printCpuFreelist------FUNC")
+		freelist_addr = int(self._kmalloc_caches[self._kmalloc_xxx_dict[kmalloc_xxx]]["cpu_slab"]) + int(self.__per_cpu_offset[cpu_num])
+		head_chunk = btoi(readMemory(freelist_addr,0x8))
 		times = 3
 		random_value = 0
 		kmalloc_size = int(kmalloc_xxx[8:],10)
-		#print("GET2")
 		if(self._freelist_harden):
-			random_value = btoi(readMemory(btoi(readMemory(self._kmalloc_caches+self._kmalloc_xxx_dict[kmalloc_xxx]*8,8))+self._slab_random_offset,8))
+			random_value = int(self._kmalloc_caches[self._kmalloc_xxx_dict[kmalloc_xxx]]["random"])
 		if(self._freelist_random):
 			times = 0
 		if( random_value != 0 ):
@@ -177,7 +171,6 @@ class pigSlub(gdb.Command):
 class pigSlab(gdb.Command):
 	def __init__ (self):
 		super(pigSlab, self).__init__ ("pigSlab", gdb.COMMAND_USER)
-		self.ex_finalAddr = re.compile(r'0x[0-9,a-z]*')
 		self._demation = 0
 		self._cpu_amount = 0
 		self.__per_cpu_offset = None
@@ -196,13 +189,17 @@ class pigSlab(gdb.Command):
 		self._blue = "\033[34m{0}\033[0m"
 
 	def initSlab(self,config):
-		self.__per_cpu_offset = int(self.ex_finalAddr.findall(gdb.execute ('p &__per_cpu_offset',to_string=True))[0],16)
-		print("__per_cpu_offset:"+hex(self.__per_cpu_offset))
-		self._kmalloc_caches = int(self.ex_finalAddr.findall(gdb.execute ('p &kmalloc_caches',to_string=True))[0],16)
-		print("kmalloc_caches:"+hex(self._kmalloc_caches))
-		while(readMemory(self.__per_cpu_offset+self._cpu_amount*8,0x8) != readMemory(self.__per_cpu_offset+(self._cpu_amount+1)*8,0x8)):
+		self.__per_cpu_offset = gdb.parse_and_eval('__per_cpu_offset')
+		self._kmalloc_caches = gdb.parse_and_eval('kmalloc_caches')
+		#a = gdb.selected_frame().read_var('kmalloc_caches')
+		while(self.__per_cpu_offset[self._cpu_amount] != self.__per_cpu_offset[self._cpu_amount+1]):
 			self._cpu_amount = self._cpu_amount + 1
-		print("_cpu_amount:"+hex(self._cpu_amount))
+		if(gdb.parse_and_eval('kmem_cache').type == gdb.parse_and_eval('kmalloc_caches[1]').type):
+			self._demation = 1
+		else:
+			self._demation = 2
+		if(self._demation == 2):
+			self._kmalloc_caches = gdb.parse_and_eval('kmalloc_caches[0]')
 
 	def printHelp(self):
 		print("Help:")
@@ -212,10 +209,11 @@ class pigSlab(gdb.Command):
 
 
 	def printCpuFreelist(self,kmalloc_xxx,cpu_num):
-		freelist_addr = btoi(readMemory(btoi(readMemory(self._kmalloc_caches+self._kmalloc_xxx_dict[kmalloc_xxx]*8,8)),8)) \
-			+ btoi(readMemory(self.__per_cpu_offset+cpu_num*8,8)) + 0x10
+		#print("printCpuFreelist------FUNC")
+		freelist_addr = int(self._kmalloc_caches[self._kmalloc_xxx_dict[kmalloc_xxx]]["cpu_cache"]) + int(self.__per_cpu_offset[cpu_num]) + 0x10
+		#print(hex(freelist_addr))
+		#print("GETS")
 		chunk_amout = btoi(readMemory(freelist_addr-0x10,0x4))
-		print("chunk_amout"+hex(chunk_amout))
 		head_chunk = btoi(readMemory(freelist_addr,0x8))
 
 		print(self._yellow.format("  Freelist : {0}\n    ".format(hex(freelist_addr))),end= "")
