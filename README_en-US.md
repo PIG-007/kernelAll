@@ -111,9 +111,16 @@ Find the following location, modify the required options accordingly, and then e
 
 ## debugging tools
 
-For more details,just see `~/kernelAll/kernelTool/pigKernelHeap.py`, you can directly `source` reference in gdb.
+see details
 
-Two commands `pigSlub` and `pigSlab` are configured, which correspond to the relevant `freelist` and `CPU` obtained under the `Slub` and `Slab` allocation configuration. However, the `debug` option needs to be added during compilation to obtain the global variables.
+````
+~/kernelAll/kernelTool/pigKernelHeap.py
+~/kernelAll/kernelTool/pigKernelHeap_debug.py
+````
+
+You can choose one of them. If you use this tool to compile with `debug` information, you can use `pigKernelHeap_debug.py`. If you don't have debug information, you need to use [vmlinux-to-elf](https:/ /github.com/marin-m/vmlinux-to-elf) to get the signed `vmlinux`, then you also need to specify the offset `slab_random_offset` of the `random` value in the `kmem_cache` structure, because Different compilation settings are different, it is best to check this, or actually adjust it.
+
+You can directly `source` reference in gdb.
 
 ### Get help
 

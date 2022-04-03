@@ -107,9 +107,16 @@ bootPwnKernel 4.4.72 -g 1234
 
 ## 调试工具
 
-详见`~/kernelAll/kernelTool/pigKernelHeap.py`，在gdb中直接`source`引用即可。
+详见
 
-配置了两个命令`pigSlub`和`pigSlab`，分别对应在Slub以及Slab分配配置下获取相关的freelist以及CPU等情况，不过需要在编译时加入`debug`选项，用来获取加入`debug`的全局变量。
+```
+~/kernelAll/kernelTool/pigKernelHeap.py
+~/kernelAll/kernelTool/pigKernelHeap_debug.py
+```
+
+任选其一即可，如果使用本工具编译的带`debug`信息时，那么使用`pigKernelHeap_debug.py`即可，如果不带debug信息时，需要用[vmlinux-to-elf](https://github.com/marin-m/vmlinux-to-elf)来获取带符号的`vmlinux`才行，然后还需要指定在`kmem_cache`结构体中的`random`值的偏移`slab_random_offset`，因为不同编译设置情况下都不一样的，这个最好查一下，或者实际调一下。
+
+在gdb中直接`source`引用即可。
 
 ### 获取帮助
 
