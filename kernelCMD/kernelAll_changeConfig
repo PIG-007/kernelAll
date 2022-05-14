@@ -1,0 +1,70 @@
+#!/usr/bin/env python3
+
+import argparse
+import os
+import subprocess
+import sys
+import re
+
+option_expr = re.compile(r'C[A-Z,0-9,_]*')
+
+
+
+#replace the options in config file
+def replace_option_config_file(config_file,options_list):
+    for i in options_list:
+        option = i[0:-2]
+        choose = i[-2:]
+        if(i[-3] == '*'):
+            option = i[0:-3]
+            p = subprocess.Popen(
+            ["sed", "-n", "/^.*{0}[_,A-Z,0-9].*$/p".format(option),config_file],
+            stdout=subprocess.PIPE)
+            option_list = p.stdout.read().decode("utf-8").strip('').split('\n')
+            for option in option_list:
+                if(option == ''):
+                    continue
+                option = option_expr.findall(option)[0]
+                #print(option)
+                result = option+choose
+                print(result)
+                cmd = "sed -i 's/^.*{0}[ =].*$/{1}/g' {2}".format(option,result,config_file)
+                os.system(cmd)
+        else:
+            p = subprocess.Popen(
+                ["sed", "-n", "/^.*{0}[ =].*$/p".format(option),config_file],
+                stdout=subprocess.PIPE)
+            option_list = p.stdout.read().decode("utf-8").strip()
+            print(option_list)
+            if(option in option_list):
+                cmd = "sed -i 's/^.*{0}[ =].*$/{1}/g' {2}".format(option,i,config_file)
+                os.system(cmd)
+
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    # parser.add_argument("-debug",dest="debug_flag",action="store_true",help="Need debug information?")
+    # parser.add_argument("-c", dest="configure",nargs="*", help="Set the configure of Kernel!Such as CONFIG_SLAB_FREELIST_RANDOM=y CONFIG_SLAB_FREELIST_HARDENED=n")
+    # parser.add_argument("-v", dest="version", type=str,help="Set the version of Kernel!")
+    # parser.add_argument("-oc", dest="other_config", type=str,help="choose the config of others")
+    parser.add_argument("-c", dest="other_config", action='append',nargs="*",type=str,help="Edit the designated config!Such ./.config CONFIG_SLAB_FREELIST_RANDOM=y")
+    args = parser.parse_args()
+    if(not args.other_config):
+        parser.print_help()
+        sys.exit()
+
+    if(args.other_config):
+        for other_config_file_options_list in args.other_config:
+            other_config_file = other_config_file_options_list[0]
+            other_config_options_list = other_config_file_options_list[1:]
+            if(os.path.isfile("".join(other_config_options_list))):
+                #replace the config file --- The latter replaces the former
+                latter_config_file = "".join(other_config_options_list)
+                former_config_file = other_config_file
+                print("The config_file:[{0}] will cover the config_file:[{1}]!".format(latter_config_file,former_config_file))
+                os.system('cp {0} {1}'.format(latter_config_file,former_config_file))
+            else:
+                print("The config file: {0} will be change!".format(other_config_file))
+                replace_option_config_file(other_config_file,other_config_options_list)
+main()

@@ -1,16 +1,16 @@
-#! /bin/bash
+#!/usr/bin/env bash
 
 if [ $# != 1 ] ; then
 echo "dec_rootfs [file]"
 exit 1;
 fi
 
-file="$1"
+file=$(readlink -f $1)
 dir=${file/.cpio/}
 
 mkdir $dir
 cd $dir
-cpio -idm < ../$file
+cpio -idm < $file
 
 # find ./* | cpio -H newc -o > ../rootfs.cpio
 

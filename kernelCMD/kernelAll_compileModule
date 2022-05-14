@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+
+if [ $# != 2 ] ; then
+echo "Usage:    kernelAll_compileModule moduleFile [kernel-version]"
+echo "Example:  kernelAll_compileModule kmod.c 4.4.72"
+exit 1;
+fi
+
+project_path=$(dirname `readlink $0`)
+cd $project_path
+cd ../
+project_path=$(pwd)
+echo $project_path
+cd ./modFile
+
+cp $project_path/Makefile ./
+
+file=$1
+file=${file//.c/.o}
+version=$2
+
+sed -i '/obj-m := /d' ./Makefile
+sed -i '/KERNELDR := /d' ./Makefile
+
+sed -i "/PWD := /iobj-m := ${file}" ./Makefile
+sed -i "/PWD := /iKERNELDR := ${project_path}/kernelSource/linux-${version}" ./Makefile
+make
+rm ./Module.symvers ./modules.order ./*.o ./*.mod.c
+
+file=${file//.o/.ko}
+dec_rootfs $project_path/kernelPwn/kernel-${version}/rootfs.cpio
+cp $file $project_path/kernelPwn/kernel-${version}/rootfs/tmp/
+cd $project_path/kernelPwn/kernel-${version}/rootfs/
+
+sed -i "/insmod/d" ./init
+sed -i "/#loadKo/ainsmod /tmp/${file}" ./init
+gen_rootfs rootfs
+cd ../
+rm -rf ./rootfs/

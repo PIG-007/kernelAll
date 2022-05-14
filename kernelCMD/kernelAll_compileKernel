@@ -1,0 +1,144 @@
+#!/usr/bin/env python3
+
+import argparse
+import os
+import subprocess
+import sys
+import re
+
+
+
+project_path = os.readlink(__file__).split('kernelCMD/')[0]
+source_code_path = project_path + "kernelSource/"
+vmlinux_file_path = project_path + "kernelPwn/"
+cve_vmlinux_file_path = project_path + "CVE/"
+tar_file_path = project_path + "kernelTarFile/"
+option_expr = re.compile(r'C[A-Z,0-9,_]*')
+CVE_2021_22555_dict = {"name":"CVE-2021-22555","version":"5.11.14",
+                        "config": ["CONFIG_IP_NF_*=y","CONFIG_NETFILTER_*=y","CONFIG_USER_NS=y",
+                                    "CONFIG_NET_NS=y","CONFIG_COMPAT=y","CONFIG_E1000=y",
+                                    "CONFIG_E1000E=y","CONFIG_CHECKPOINT_RESTORE=y","CONFIG_SECURITY=n"],"debug_flag":True}
+cve_list = [CVE_2021_22555_dict]
+
+
+#replace the options in config file
+def replace_option_config_file(all_config_file,config_file,options_list):
+    for i in options_list:
+        option = i[0:-2]
+        choose = i[-2:]
+        if(i[-3] == '*'):
+            option = i[0:-3]
+            p = subprocess.Popen(
+            ["sed", "-n", "/^.*{0}[_,A-Z,0-9].*$/p".format(option),all_config_file],
+            stdout=subprocess.PIPE)
+            option_list = p.stdout.read().decode("utf-8").strip('').split('\n')
+            for option in option_list:
+                if(option == ''):
+                    continue
+                option = option_expr.findall(option)[0]
+                #print(option)
+                result = option + choose
+                print(result)
+                rm_cmd = "sed -i '/{0}/d' {1}".format(option,config_file)
+                os.system(rm_cmd)
+                add_cmd = "echo {0} >> {1}".format(result,config_file)
+                os.system(add_cmd)
+        else:
+            p = subprocess.Popen(
+                ["sed", "-n", "/^.*{0}[ =].*$/p".format(option),all_config_file],
+                stdout=subprocess.PIPE)
+            option_list = p.stdout.read().decode("utf-8").strip()
+            #print(option_list)
+            if(option in option_list):
+                result = option+choose
+                print(result)
+                rm_cmd = "sed -i '/{0}/d' {1}".format(option,config_file)
+                os.system(rm_cmd)
+                add_cmd = "echo {0} >> {1}".format(result,config_file)
+                os.system(add_cmd)
+            else:
+                print("\033[1;35mNo such option:\033[0m",option)
+
+
+def compile_kernel(version,config_list,debug_flag,cve_number=0):
+    #make config file
+    make_defconfig_cmd = "make --directory={0}linux-{1}/ defconfig".format(source_code_path,version)
+    def_config_file = source_code_path + "linux-" + version + "/" + ".config"
+    make_allConfig_cmd = "make --directory={0}linux-{1}/ allyesconfig".format(source_code_path,version)
+    all_config_file = source_code_path + "linux-" + version + "/" + "allConfig"
+    os.system(make_allConfig_cmd)
+    os.system("cp {0} {1}".format(def_config_file,all_config_file))
+    os.system(make_defconfig_cmd)
+
+    #no cve and add some config
+    if( cve_number == 0 ):
+        os.system("sed -i '/CONFIG_GENERIC_IRQ_PROBE=y/d' {0}".format(def_config_file))
+        os.system("sed -i '/CONFIG_SYSTEM_TRUSTED_KEYS=.*$/d' {0}".format(def_config_file))
+
+    if(debug_flag):
+        debug_cmd = "sed -i 's/^.*{0}.*$/{1}/g' {2}".format("CONFIG_DEBUG_INFO","CONFIG_DEBUG_INFO=y", def_config_file)
+        os.system(debug_cmd)
+        print("Get DEBUG!")
+    if( config_list ):
+        replace_option_config_file(all_config_file,def_config_file,config_list)
+    
+    #start make
+    input("\033[1;35mIs everything ready?\033[0m")
+    start_make_cmd = "echo 'y' | make --directory={0}linux-{1}/ -j20".format(source_code_path, version)
+    os.system(start_make_cmd)
+
+    if( cve_number == 0 ):
+        #copy kernel file
+        mkdir_vmlinux_cmd = "mkdir -p {0}kernel-{1}".format(vmlinux_file_path,version)
+        os.system(mkdir_vmlinux_cmd)
+        os.system("cp {0}linux-{1}/arch/x86/boot/bzImage {2}kernel-{1}/".format(source_code_path,version,vmlinux_file_path))
+        os.system("cp {0}linux-{1}/vmlinux {2}kernel-{1}/".format(source_code_path,version,vmlinux_file_path))
+        os.system("cp {0}/rootfs.cpio {2}kernel-{1}".format(project_path,version,vmlinux_file_path))
+    else:
+        mkdir_vmlinux_cmd = "mkdir -p {0}{1}".format(cve_vmlinux_file_path,cve_number)
+        os.system("cp {0}linux-{1}/arch/x86/boot/bzImage {2}{3}/".format(source_code_path,version,cve_vmlinux_file_path,cve_number))
+        os.system("cp {0}linux-{1}/vmlinux {2}{3}/".format(source_code_path,version,cve_vmlinux_file_path,cve_number))
+        os.system("cp {0}/rootfs.cpio {1}{2}/".format(project_path,cve_vmlinux_file_path,cve_number))
+
+
+def get_kernel_file(version):
+    #get file
+    wget_cmd = "wget -P {0} -c https://mirror.tuna.tsinghua.edu.cn/kernel/v{1}.x/linux-{2}.tar.gz".format(tar_file_path,version[0:1],version)
+    if(not os.system(wget_cmd)):
+        pass
+    else:
+        print("Can't wget zhe file!No such version or can't download!")
+        sys.exit()
+    tar_cmd = "tar -zvxf {0}linux-{1}.tar.gz -C {2}".format(tar_file_path,version,source_code_path)
+    os.system(tar_cmd)
+
+
+def main():
+    debug_flag = False
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-debug",dest="debug_flag",action="store_true",help="Need debug information?")
+    parser.add_argument("-c", dest="configure",nargs="*", help="Set the main configure of Kernel!Such as CONFIG_SLAB_FREELIST_RANDOM=y \
+         CONFIG_NETFILTER_XT_*=y CONFIG_SLAB_FREELIST_HARDENED=n")
+    parser.add_argument("-v", dest="version", type=str,help="Set the version of Kernel!")
+    parser.add_argument("-cve", dest="cve_flag", type=str,choices = ["CVE-2021-22555"],help="Choose the CVE enviroment!")
+    #parser.add_argument("-oc", dest="other_config", type=str,help="Set the main configure of Kernel Module!")
+    args = parser.parse_args()
+    if(args.cve_flag):
+        for cve in cve_list:
+            if(cve["name"] == args.cve_flag):
+                print(cve["name"])
+                get_kernel_file(cve["version"])
+                compile_kernel(cve["version"],cve["config"],cve["debug_flag"],cve["name"])
+        parser.print_help()
+        sys.exit()
+    if(not args.version):
+        print("Must set the version!")
+        parser.print_help()
+        sys.exit()
+    if(args.debug_flag):
+        debug_flag = True
+        print("Get DEBUG!")
+    if( args.configure ):
+        get_kernel_file(cve["version"])
+        compile_kernel(args.version,args.configure,debug_flag)
+main()

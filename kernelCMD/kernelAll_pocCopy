@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+
+
+if [ $# != 2 ] ; then
+echo "Usage:    kernelAll_pocCopy pocFile [kernel-version]"
+echo "Example:  kernelAll_pocCopy poc 4.4.72"
+exit 1;
+fi
+
+pocFile=$(readlink -f $1)
+
+
+project_path=$(dirname `readlink $0`)
+cd $project_path
+cd ../
+project_path=$(pwd)
+
+
+
+version=$2
+dec_rootfs $project_path/kernelPwn/kernel-${version}/rootfs.cpio
+cp ${pocFile} $project_path/kernelPwn/kernel-${version}/rootfs/tmp/
+cd $project_path/kernelPwn/kernel-${version}/rootfs/
+gen_rootfs rootfs
+cd ../
+rm -rf ./rootfs/

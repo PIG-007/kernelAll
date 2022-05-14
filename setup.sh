@@ -1,5 +1,6 @@
-#! /bin/bash
+#!/usr/bin/env bash
 
+project_path=$(pwd)
 
 sudo apt-get -y install make gcc bison flex libssl-dev musl-tools
 sudo apt-get -y install libncurses5-dev openssl 
@@ -15,8 +16,7 @@ sudo apt-get -y install tar wget
 sudo apt-get -y install qemu
 
 
-
-chmod a+x ~/kernelAll/kernelCMD/*
-sudo cp ~/kernelAll/kernelCMD/* /usr/bin/
-cd ~/kernelAll
-dec_rootfs rootfs.cpio
+mkdir kernelSource
+sudo ln -s -f $project_path/kernelCMD/* /usr/bin/
+chmod +x $project_path/kernelCMD/*
+dec_rootfs ./rootfs.cpio

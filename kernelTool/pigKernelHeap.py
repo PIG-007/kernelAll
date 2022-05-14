@@ -53,7 +53,11 @@ class pigSlub(gdb.Command):
 			print(config[i])
 			if( config[i] == "freelist_harden"):
 				self._freelist_harden = True
-				self._slab_random_offset = int(config[i+1],16)
+				if(config[i+1].isdigit() or config[i+1].startswith("0x")):
+					self._slab_random_offset = int(config[i+1],16)
+				else:
+					self._slab_random_offset = 0xb8
+					print(hex(self._slab_random_offset))
 			if( config[i] == "freelist_harden_swab"):
 				self._freelist_harden_swab = True
 			if( config[i] == "freelist_random"):
@@ -66,8 +70,8 @@ class pigSlub(gdb.Command):
 
 	def printHelp(self):
 		print("Help:")
-		print("You have to init the config!Just work on DEBUG_MOD!")
-		print("First:\tpigSlub init [freelist_harden] [freelist_harden_swab] [freelist_random] [freelist_size2]")
+		print("You have to init the config!Could work on Symbol_MOD!But need slab_random_offset when the freelist_harden is set!")
+		print("First:\tpigSlub init [freelist_harden [slab_random_offset(default 0xb8)]] [freelist_harden_swab] [freelist_random] [freelist_size2]")
 		print("Usage:\n\tpigSlub [cpu0/...]\n\tpigSlub [kmalloc-32/...]\n\tpigSlub all")
 
 
@@ -206,7 +210,7 @@ class pigSlab(gdb.Command):
 
 	def printHelp(self):
 		print("Help:")
-		print("You have to init the config!Just work on DEBUG_MOD!")
+		print("You have to init the config!Could work on Symbol_MOD!")
 		print("First:\tpigSlab init")
 		print("Usage:\n\tpigSlab [cpu0/...]\n\tpigSlab [kmalloc-32/...]\n\tpigSlab all")
 
