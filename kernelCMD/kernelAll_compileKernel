@@ -139,6 +139,6 @@ def main():
         debug_flag = True
         print("Get DEBUG!")
     if( args.configure ):
-        get_kernel_file(cve["version"])
+        get_kernel_file(args.version)
         compile_kernel(args.version,args.configure,debug_flag)
 main()
